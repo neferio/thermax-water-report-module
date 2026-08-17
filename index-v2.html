@@ -244,10 +244,9 @@ const ENDPOINTS = {
   // Subjective info (comments / critical updates / issues) for a date range.
   // Called only when the user generates a report.
   subjective: "__MMT_SUBJECTIVE_URL__",
-  // Reserved slot — currently the version history API: earliest/latest value
-  // of each stat inside a date range. Called on Vendor visit report download,
-  // for the Item Movement table.
-  reserved:   "__MMT_RESERVED_URL__"
+  // Version history: earliest/latest value of each stat inside a date range.
+  // Called on Daily report download, for the Item Movement table.
+  versions:   "__MMT_VERSION_URL__"
 };
 
 // Local review only. Serve this folder over http and flip to true.
@@ -1416,8 +1415,8 @@ async function generateDaily(){
 }
 
 async function loadVersions(win){
-  const base = ENDPOINTS.reserved;
-  if(unresolved(base)) throw new Error("Version endpoint placeholder not replaced (__MMT_RESERVED_URL__)");
+  const base = ENDPOINTS.versions;
+  if(unresolved(base)) throw new Error("Version endpoint placeholder not replaced (__MMT_VERSION_URL__)");
   const u = new URL(base, location.href);
   u.searchParams.set("workspaceId", S.dump.workspace.id||"");
   u.searchParams.set(DATE_PARAMS.start, iso(win.start));
