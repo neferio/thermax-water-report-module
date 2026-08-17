@@ -1,0 +1,92 @@
+{
+  "last_updated": "2026-08-12T09:30:00.000Z",
+  "error": null,
+  "data": {
+    "workspace": { "id": "665faa01c2e3b40012aa0001", "name": "BPCL Kochi Refinery" },
+    "dateRange": { "startDate": "2026-08-10", "endDate": "2026-08-12" },
+    "projects": [
+      {
+        "id": "665fp001c2e3b40012bb0001",
+        "name": "Crude Distillation Unit Revamp",
+        "stats": [
+          {
+            "key": "status",
+            "label": "Status",
+            "earliest": { "value": "on_track", "asOf": "2026-08-09T18:20:00.000Z" },
+            "latest": { "value": "at_risk", "asOf": "2026-08-12T17:55:00.000Z" }
+          },
+          {
+            "key": "completionPercentage",
+            "label": "Actual completion %",
+            "earliest": { "value": 45, "asOf": "2026-08-09T18:20:00.000Z" },
+            "latest": { "value": 62, "asOf": "2026-08-12T17:55:00.000Z" }
+          },
+          {
+            "key": "expectedCompletionPercentage",
+            "label": "Expected completion %",
+            "earliest": { "value": 52, "asOf": "2026-08-09T18:20:00.000Z" },
+            "latest": { "value": 68, "asOf": "2026-08-12T17:55:00.000Z" }
+          },
+          {
+            "key": "estimatedCompletionDate",
+            "label": "Estimated completion date",
+            "earliest": { "value": "2026-10-15", "asOf": "2026-08-09T18:20:00.000Z" },
+            "latest": { "value": "2026-10-22", "asOf": "2026-08-12T17:55:00.000Z" }
+          },
+          {
+            "key": "estimatedDelay",
+            "label": "Estimated delay (days)",
+            "earliest": { "value": 3, "asOf": "2026-08-09T18:20:00.000Z" },
+            "latest": { "value": 7, "asOf": "2026-08-12T17:55:00.000Z" }
+          }
+        ],
+        "pos": [
+          {
+            "id": "665fo001c2e3b40012cc0001",
+            "poNumber": "4500123456",
+            "stats": [
+              {
+                "key": "completionPercentage",
+                "label": "Actual completion %",
+                "earliest": { "value": 40, "asOf": "2026-08-09T16:00:00.000Z" },
+                "latest": { "value": 58, "asOf": "2026-08-12T15:10:00.000Z" }
+              },
+              {
+                "key": "currPace",
+                "label": "Current pace",
+                "earliest": { "value": "steady", "asOf": "2026-08-09T16:00:00.000Z" },
+                "latest": { "value": "slowing", "asOf": "2026-08-12T15:10:00.000Z" }
+              }
+            ],
+            "items": [
+              {
+                "id": "665fi001c2e3b40012dd0001",
+                "itemCode": "CDU-EX-01",
+                "stats": [
+                  {
+                    "key": "status",
+                    "label": "Status",
+                    "earliest": { "value": "in_progress", "asOf": "2026-08-09T14:30:00.000Z" },
+                    "latest": { "value": "at_risk", "asOf": "2026-08-12T11:45:00.000Z" }
+                  },
+                  {
+                    "key": "completionPercentage",
+                    "label": "Actual completion %",
+                    "earliest": { "value": 55, "asOf": "2026-08-09T14:30:00.000Z" },
+                    "latest": { "value": 70, "asOf": "2026-08-12T11:45:00.000Z" }
+                  },
+                  {
+                    "key": "estimatedDelay",
+                    "label": "Estimated delay (days)",
+                    "earliest": null,
+                    "latest": { "value": 4, "asOf": "2026-08-12T11:45:00.000Z" }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

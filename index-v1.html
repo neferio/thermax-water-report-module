@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report Module — Thermax Water &amp; Waste</title>
+<style>
+/* ============================================================ TOKENS */
+:root{
+  --navy:#1E2A3A; --navy-2:#263449; --navy-3:#33455E;
+  --accent:#0066CC; --brand-blue:#4DA3FF;
+  --canvas:#F4F6F8; --card:#FFFFFF; --line:#E2E8F0; --band:#FAFBFC; --parent:#E8EDF3;
+  --ink:#0F1728; --ink-2:#475569; --ink-3:#64748B;
+  --cream:#FEF9E7; --entry:#FFFCF0;
+  --ok:#16A34A; --ok-bg:#DCFCE7; --warn:#B45309; --warn-bg:#FEF3C7;
+  --err:#DC2626; --err-bg:#FEE2E2;
+  --sidebar-w:264px;
+  --r:10px;
+  --shadow:0 1px 2px rgba(15,23,40,.04), 0 4px 16px rgba(15,23,40,.06);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--canvas); color:var(--ink);
+  font:14px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+/* ============================================================ SHELL */
+.app{display:flex; min-height:100vh}
+
+/* ---- sidebar */
+.side{
+  width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+  background:var(--navy); color:#fff; display:flex; flex-direction:column;
+  position:sticky; top:0; height:100vh;
+}
+.side-head{padding:22px 20px 18px; border-bottom:1px solid rgba(255,255,255,.09)}
+.wordmark{font-size:15px; font-weight:700; letter-spacing:.02em}
+.wordmark span{color:var(--brand-blue)}
+.side-head .sub{margin-top:5px; font-size:11px; color:#94A3B8; letter-spacing:.06em; text-transform:uppercase}
+
+.side-scope{padding:16px 20px; border-bottom:1px solid rgba(255,255,255,.09)}
+.side-scope .lbl{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#7C8BA1}
+.side-scope .ws{margin-top:6px; font-size:13px; font-weight:600; line-height:1.35}
+.side-scope .meta{margin-top:8px; font-size:11px; color:#94A3B8}
+
+.nav{padding:16px 12px; flex:1; overflow-y:auto}
+.nav-lbl{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#7C8BA1; padding:0 8px 10px}
+.rpt{
+  width:100%; text-align:left; background:transparent; border:0; color:#CBD5E1;
+  padding:11px 12px; border-radius:8px; display:flex; gap:11px; align-items:flex-start;
+  transition:background .15s, color .15s; margin-bottom:2px;
+}
+.rpt:hover:not(:disabled){background:var(--navy-2); color:#fff}
+.rpt[aria-current="true"]{background:var(--navy-3); color:#fff; box-shadow:inset 3px 0 0 var(--brand-blue)}
+.rpt:disabled{opacity:.42; cursor:not-allowed}
+.rpt .ico{flex:0 0 16px; margin-top:1px; opacity:.85}
+.rpt .nm{font-size:13px; font-weight:600; display:block}
+.rpt .ds{font-size:11px; color:#94A3B8; display:block; margin-top:2px; line-height:1.35}
+.rpt[aria-current="true"] .ds{color:#B6C4D6}
+.pill{
+  font-size:9px; letter-spacing:.06em; text-transform:uppercase; font-weight:700;
+  background:rgba(255,255,255,.12); color:#CBD5E1; padding:2px 6px; border-radius:4px; margin-left:auto;
+}
+.side-foot{padding:14px 20px; border-top:1px solid rgba(255,255,255,.09); font-size:11px; color:#7C8BA1}
+
+/* ---- main */
+.main{flex:1; min-width:0; display:flex; flex-direction:column}
+.top{
+  background:var(--card); border-bottom:1px solid var(--line);
+  padding:18px 32px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.top h1{margin:0; font-size:17px; font-weight:700; letter-spacing:-.01em}
+.top .crumb{font-size:12px; color:var(--ink-3); margin-top:3px}
+.status{margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink-2)}
+.dot{width:7px; height:7px; border-radius:50%; background:var(--ink-3); flex:0 0 7px}
+.dot.live{background:var(--ok); box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.dot.bad{background:var(--err); box-shadow:0 0 0 3px rgba(220,38,38,.15)}
+.dot.busy{background:var(--accent); animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.stage{padding:32px; flex:1; display:flex; justify-content:center}
+.stage-inner{width:100%; max-width:760px}
+
+/* ---- states */
+.empty{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  padding:64px 40px; text-align:center; box-shadow:var(--shadow);
+}
+.empty .mark{
+  width:52px; height:52px; margin:0 auto 18px; border-radius:12px;
+  background:var(--parent); display:grid; place-items:center; color:var(--navy);
+}
+.empty h2{margin:0 0 8px; font-size:16px; font-weight:700}
+.empty p{margin:0 auto; max-width:380px; color:var(--ink-2); font-size:13px}
+
+.panel{background:var(--card); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden}
+.panel-head{padding:22px 26px 20px; border-bottom:1px solid var(--line)}
+.panel-head .eyebrow{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); font-weight:700}
+.panel-head h2{margin:7px 0 6px; font-size:19px; font-weight:700; letter-spacing:-.01em}
+.panel-head p{margin:0; color:var(--ink-2); font-size:13px; max-width:56ch}
+.panel-body{padding:24px 26px}
+
+/* ---- window card: the signature element */
+.win{
+  border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--band);
+}
+.win-top{
+  display:flex; align-items:baseline; gap:10px; padding:14px 18px;
+  border-bottom:1px solid var(--line); background:var(--card);
+}
+.win-top .k{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:700}
+.win-top .v{font-size:15px; font-weight:700; letter-spacing:-.01em}
+.win-top .badge{
+  margin-left:auto; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px;
+  background:var(--parent); color:var(--navy);
+}
+/* seven-day rail */
+.rail{display:grid; grid-template-columns:repeat(7,1fr); gap:0; padding:16px 18px 6px}
+.day{text-align:center; position:relative}
+.day .dow{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:700}
+.day .num{
+  margin:6px auto 0; width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+  font-size:12px; font-weight:600; color:var(--ink-3); background:transparent; border:1px solid transparent;
+}
+.day.inwin .num{background:#DBEAFE; color:#1D4ED8}
+.day.today .num{background:var(--accent); color:#fff; border-color:var(--accent)}
+.day.future .num{color:#B6C0CD}
+.rail-cap{padding:2px 18px 14px; font-size:11px; color:var(--ink-3); text-align:center}
+
+.note{
+  margin-top:18px; border-left:3px solid var(--brand-blue); background:var(--cream);
+  padding:13px 16px; border-radius:0 6px 6px 0; font-size:12.5px; color:#6B4A00; line-height:1.55;
+}
+.note strong{color:#513700}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-top:18px}
+.fact{background:var(--card); padding:13px 15px}
+.fact .k{font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); font-weight:700}
+.fact .v{margin-top:5px; font-size:19px; font-weight:700; letter-spacing:-.02em}
+.fact .v small{font-size:12px; font-weight:600; color:var(--ink-3); letter-spacing:0}
+
+.actions{display:flex; align-items:center; gap:14px; margin-top:24px; flex-wrap:wrap}
+.btn{
+  background:var(--accent); color:#fff; border:0; padding:12px 22px; border-radius:8px;
+  font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:9px;
+  transition:background .15s, transform .05s;
+}
+.btn:hover:not(:disabled){background:#0055AB}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn:disabled{background:#9FB6CE; cursor:not-allowed}
+.btn .sp{width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hint{font-size:12px; color:var(--ink-3)}
+
+.fail{border-left:3px solid var(--err); background:var(--err-bg); padding:13px 16px; border-radius:0 6px 6px 0; margin-top:18px; font-size:12.5px; color:#7F1D1D}
+.fail code{background:rgba(0,0,0,.06); padding:1px 5px; border-radius:3px; font-size:11.5px}
+
+/* ---- load / error screens */
+.screen{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:56px 40px; text-align:center; box-shadow:var(--shadow)}
+.screen .sp-lg{width:30px; height:30px; margin:0 auto 18px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite}
+.screen h2{margin:0 0 8px; font-size:16px; font-weight:700}
+.screen p{margin:0 auto 20px; max-width:420px; color:var(--ink-2); font-size:13px}
+.screen .why{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; color:var(--err); background:var(--err-bg); display:inline-block; padding:7px 12px; border-radius:6px; margin-bottom:20px; max-width:100%; overflow-wrap:anywhere}
+.btn-ghost{background:var(--card); color:var(--navy); border:1px solid var(--line); padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600}
+.btn-ghost:hover{background:var(--band); border-color:#CBD5E1}
+
+@media (max-width:900px){
+  .app{flex-direction:column}
+  .side{width:100%; height:auto; position:static; flex:none}
+  .nav{max-height:none}
+  .stage{padding:20px}
+  .top{padding:16px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============================================ SIDEBAR -->
+  <aside class="side">
+    <div class="side-head">
+      <div class="wordmark">venwiz<span>.</span></div>
+      <div class="sub">Report module</div>
+    </div>
+
+    <div class="side-scope">
+      <div class="lbl">Workspace</div>
+      <div class="ws" id="wsName">Loading…</div>
+      <div class="meta" id="wsMeta">&nbsp;</div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Report types">
+      <div class="nav-lbl">Reports</div>
+      <!-- rendered from REPORT_TYPES -->
+    </nav>
+
+    <div class="side-foot">
+      <div id="lastUpd">—</div>
+    </div>
+  </aside>
+
+  <!-- ============================================ MAIN -->
+  <div class="main">
+    <header class="top">
+      <div>
+        <h1 id="topTitle">Reports</h1>
+        <div class="crumb" id="topCrumb">Thermax — Water &amp; Waste</div>
+      </div>
+      <div class="status">
+        <span class="dot" id="dot"></span>
+        <span id="dotText">Connecting…</span>
+      </div>
+    </header>
+
+    <main class="stage"><div class="stage-inner" id="stage"></div></main>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================================================================
+   CONFIG — Venwiz backend replaces these placeholders at inject time
+   ================================================================ */
+const ENDPOINTS = {
+  // Quantitative dump. Called once on page load.
+  dump:       "__MMT_DASHBOARD_DUMP_URL__",
+  // Subjective info (comments / critical updates / issues) for a date range.
+  // Called only when the user generates a report.
+  subjective: "__MMT_SUBJECTIVE_URL__",
+  // Reserved third slot (snapshot / history, or attachments).
+  reserved:   "__MMT_RESERVED_URL__"
+};
+
+// Local review only. Serve this folder over http and flip to true.
+//   python3 -m http.server 8000
+const DEV = {
+  on: false,
+  dump:       "./thermax-dashboard-dump-api.json",
+  subjective: "./Sample-data-Subjective-info.json"
+};
+
+const WEEK_STARTS_ON = 1;        // 1 = Monday
+const DATE_PARAMS = { start:"startDate", end:"endDate" };   // subjective API query keys
+
+/* ================================================================
+   REPORT REGISTRY — add a type here and it appears in the sidebar
+   ================================================================ */
+const REPORT_TYPES = [
+  {
+    id:"weekly",
+    name:"Weekly report",
+    desc:"Current week, Monday to Sunday",
+    enabled:true,
+    icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>',
+    // no user input; the window is derived from today
+    window: () => currentWeek(new Date()),
+    render: renderWeekly
+  },
+  {
+    id:"daily",
+    name:"Daily report",
+    desc:"Single day snapshot",
+    enabled:false,
+    badge:"Soon",
+    icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>'
+  },
+  {
+    id:"range",
+    name:"Custom range",
+    desc:"Pick your own start and end",
+    enabled:false,
+    badge:"Soon",
+    icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M4 12l4-4M20 12l-4 4"/></svg>'
+  }
+];
+
+/* ================================================================
+   STATE
+   ================================================================ */
+const S = { dump:null, dumpErr:null, loading:true, active:null, busy:false, genErr:null };
+
+/* ================================================================
+   WEEK MATH  (Mon 00:00:00 -> Sun 23:59:59, local time)
+   ================================================================ */
+function currentWeek(now){
+  const d = new Date(now);
+  const shift = (d.getDay() - WEEK_STARTS_ON + 7) % 7;   // days since Monday
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - shift, 0,0,0,0);
+  const end   = new Date(start.getFullYear(), start.getMonth(), start.getDate()+6, 23,59,59,999);
+  // data can only exist up to now, so the queried window stops at today
+  const asOf  = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23,59,59,999);
+  const queryEnd = asOf < end ? asOf : end;
+  return { start, end, queryEnd, partial: queryEnd < end, dayIndex: shift };
+}
+const pad = n => String(n).padStart(2,"0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const fmt = d => d ? `${pad(d.getDate())} ${MON[d.getMonth()]} ${d.getFullYear()}` : "—";
+const fmtShort = d => d ? `${pad(d.getDate())} ${MON[d.getMonth()]}` : "—";
+
+/* ================================================================
+   DUMP MODEL  (DOM-free — mirrors build_weekly_report.py)
+   ================================================================ */
+const ALIASES = { completed:"complete", delayed_completion:"delayed", at_risk:"at_medium_risk", not_started:"not_yet_started" };
+const SEV = { delayed:5, at_high_risk:4, at_medium_risk:3, at_low_risk:2, on_track:1, in_progress:1, not_yet_started:0, complete:0 };
+const canon = s => { s = String(s||"").toLowerCase().trim(); s = ALIASES[s]||s; return (s in SEV) ? s : "not_yet_started"; };
+const n0 = v => v==null ? 0 : Number(v)||0;
+const pdate = s => { if(!s) return null; const d=new Date(s); return isNaN(d) ? null : new Date(d.getFullYear(),d.getMonth(),d.getDate()); };
+const dayDiff = (a,b) => Math.round((a-b)/86400000);
+
+/** Weight for the project rollup. Matches the dashboard exactly: the raw
+ *  plannedDurationDays, falling back to 1 when MMT returns null. Do not
+ *  substitute a duration derived from the planned dates — the dashboard
+ *  does not, and the two artefacts must agree. */
+function durationOf(o){
+  return n0(o.plannedDurationDays) || 1;
+}
+function wavg(rows, field){
+  let num=0, den=0;
+  for(const r of rows){ const w = r.dur; num += n0(r[field])*w; den += w; }
+  return den ? num/den : 0;
+}
+function worstStatus(rows){
+  if(!rows.length) return "not_yet_started";
+  const sts = rows.map(r => r.status);
+  if(sts.every(s => s==="complete")) return "complete";   // all done
+  if(sts.includes("delayed")) return "delayed";           // absolute priority
+  return sts.reduce((a,b) => SEV[b] > SEV[a] ? b : a, sts[0]);
+}
+const maxDate = arr => { const v = arr.filter(Boolean); return v.length ? new Date(Math.max(...v)) : null; };
+
+function buildModel(raw){
+  const data = raw.data;
+  const vendors=[], pos=[], items=[], miles=[], issues=[];
+  for(const v of (data.projects||[])){
+    const vname = String(v.name||"").replace(/&amp;/g,"&").trim();
+    for(const po of (v.pos||[])){
+      const dd = {}; for(const x of (po.dynamicData||[])) dd[x.key] = x.value;
+      const q = po.quantity||{};
+      const p = {
+        vendorId:v.id, vendor:vname, poId:po.id,
+        project:String(dd.projectName||"").trim() || "Unmapped",
+        po:String(po.poNumber||""), desc:String(po.description||""),
+        status:canon(po.status),
+        pEnd:pdate(po.plannedEndDate), fEnd:pdate(po.estimatedEndDate)||pdate(po.plannedEndDate),
+        slip:Math.max(0,n0(po.estimatedDelayDays)),
+        act:n0(po.actualCompletionPercentage), exp:n0(po.expectedCompletionPercentage),
+        dur:durationOf(po), durMissing:!(n0(po.plannedDurationDays)>0),
+        qTot:n0(q.total), qExp:n0(q.expectedTillDate), qDel:n0(q.delivered),
+        cu:n0(po.criticalUpdatesCount), cm:n0(po.commentsCount), img:n0(po.imagesCount)
+      };
+      pos.push(p);
+      for(const x of (po.issues||[])) issues.push(mkIssue(x,"PO",p,null,null));
+      for(const it of (po.items||[])){
+        const st = it.milestoneStats||{}, iq = it.quantity||{};
+        const ir = {
+          poId:po.id, itemId:it.id, vendor:vname, project:p.project, po:p.po,
+          code:String(it.itemCode||""), name:String(it.itemName||""),
+          status:canon(it.status), slip:Math.max(0,n0(it.estimatedDelayDays)),
+          act:n0(it.actualCompletionPercentage), exp:n0(it.expectedCompletionPercentage),
+          msTot:n0(st.total), msDone:n0(st.completed), msDly:n0(st.delayed),
+          qTot:n0(iq.total), qExp:n0(iq.expectedTillDate), qDel:n0(iq.delivered),
+          cu:n0(it.criticalUpdatesCount)
+        };
+        items.push(ir);
+        for(const x of (it.issues||[])) issues.push(mkIssue(x,"Item",p,ir,null));
+        for(const m of (it.milestones||[])){
+          const mr = {
+            msId:m.id, vendor:vname, project:p.project, po:p.po, item:ir.name, code:ir.code,
+            name:String(m.name||""), status:canon(m.status),
+            pEnd:pdate(m.plannedEndDate), aEnd:pdate(m.actualEndDate),
+            slip:Math.max(0,n0(m.estimatedDelayDays)), cu:n0(m.criticalUpdatesCount)
+          };
+          miles.push(mr);
+          for(const x of (m.issues||[])) issues.push(mkIssue(x,"Milestone",p,ir,mr));
+        }
+      }
+    }
+    vendors.push({
+      id:v.id, vendor:vname, status:canon(v.status),
+      act:n0(v.actualCompletionPercentage), exp:n0(v.expectedCompletionPercentage),
+      pEnd:pdate(v.plannedEndDate), fEnd:pdate(v.estimatedEndDate)||pdate(v.plannedEndDate),
+      slip:Math.max(0,n0(v.estimatedDelayDays))
+    });
+  }
+
+  // PROJECT — no entity in MMT; grouped on the PO dynamic-data key
+  const names = [...new Set(pos.map(p=>p.project))].sort((a,b)=>
+    a==="Unmapped" ? 1 : b==="Unmapped" ? -1 : a.localeCompare(b));
+  const projects = names.map(nm => {
+    const pp = pos.filter(p=>p.project===nm);
+    return {
+      project:nm, poCount:pp.length, status:worstStatus(pp),
+      act:wavg(pp,"act"), exp:wavg(pp,"exp"),
+      pEnd:maxDate(pp.map(p=>p.pEnd)), fEnd:maxDate(pp.map(p=>p.fEnd)),
+      slip:Math.max(0,...pp.map(p=>p.slip)),
+      vendors:[...new Set(pp.map(p=>p.vendor))],
+      qTot:pp.reduce((s,p)=>s+p.qTot,0), qExp:pp.reduce((s,p)=>s+p.qExp,0), qDel:pp.reduce((s,p)=>s+p.qDel,0),
+      noDur:pp.filter(p=>p.durMissing).length
+    };
+  });
+
+  return {
+    workspace:data.workspace||{}, asOf:raw.last_updated||null,
+    vendors, projects, pos, items, miles, issues,
+    totals:{
+      qTot:pos.reduce((s,p)=>s+p.qTot,0), qExp:pos.reduce((s,p)=>s+p.qExp,0), qDel:pos.reduce((s,p)=>s+p.qDel,0),
+      openIssues:issues.filter(i=>i.status!=="closed").length
+    }
+  };
+}
+function mkIssue(i, level, p, it, m){
+  const rd = pdate(i.raisedDate);
+  return {
+    id:i.id, level, vendor:p.vendor, project:p.project, po:p.po,
+    item:(it&&it.name)||"", code:(it&&it.code)||"", milestone:(m&&m.name)||"",
+    text:String(i.text||""), status:String(i.status||"open").toLowerCase(),
+    category:String(i.categoryName||""), contributor:String(i.contributor||""),
+    raisedBy:person(i.raisedBy), assigned:person(i.assignedTo),
+    raised:rd, closed:pdate(i.resolutionDate),
+    notes:(i.notes||[]).map(n => typeof n==="string" ? n : String(n.text||n.note||n.comment||"")).filter(Boolean)
+  };
+}
+const person = p => !p ? "" : `${p.firstName||""} ${p.lastName||""}`.trim();
+
+/* ================================================================
+   SUBJECTIVE MODEL — flatten the nested payload into tagged records
+   ================================================================ */
+function flattenSubjective(raw){
+  const out = [];
+  const push = (bucket, arr, level, ctx) => {
+    for(const r of (arr||[])){
+      out.push({
+        kind:bucket, level,
+        id:r.id, text:String(r.text||""),
+        author:person(r.creator||r.raisedBy),
+        authorType:(r.creator&&r.creator.userType)||(r.raisedBy&&r.raisedBy.userType)||"",
+        date:pdate(r.dateAdded||r.raisedDate),
+        raw:r, ...ctx
+      });
+    }
+  };
+  for(const v of (raw.data.projects||[])){
+    const ctxV = { vendorId:v.id, vendor:String(v.name||"").trim(), poId:null, po:"", item:"", milestone:"" };
+    push("comment", v.comments, "vendor", ctxV);
+    push("critical_update", v.criticalUpdates, "vendor", ctxV);
+    push("issue", v.issues, "vendor", ctxV);
+    for(const po of (v.pos||[])){
+      const ctxP = { ...ctxV, poId:po.id, po:String(po.poNumber||""), poVendorName:po.vendorName||"" };
+      push("comment", po.comments, "po", ctxP);
+      push("critical_update", po.criticalUpdates, "po", ctxP);
+      push("issue", po.issues, "po", ctxP);
+      for(const it of (po.items||[])){
+        const ctxI = { ...ctxP, itemId:it.id, item:String(it.itemName||it.itemCode||"") };
+        push("comment", it.comments, "item", ctxI);
+        push("critical_update", it.criticalUpdates, "item", ctxI);
+        push("issue", it.issues, "item", ctxI);
+        for(const m of (it.milestones||[])){
+          const ctxM = { ...ctxI, msId:m.id, milestone:String(m.name||"") };
+          push("comment", m.comments, "milestone", ctxM);
+          push("critical_update", m.criticalUpdates, "milestone", ctxM);
+          push("issue", m.issues, "milestone", ctxM);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/* ================================================================
+   FETCH
+   ================================================================ */
+async function getJSON(url){
+  const res = await fetch(url, { headers:{ Accept:"application/json" }});
+  if(!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+  const j = await res.json();
+  if(j && j.error) throw new Error(j.error);
+  if(!j || !j.data) throw new Error("Response contained no data");
+  return j;
+}
+function unresolved(u){ return !u || /^__.*__$/.test(u); }
+
+async function loadDump(){
+  S.loading = true; S.dumpErr = null; paint();
+  const url = DEV.on ? DEV.dump : ENDPOINTS.dump;
+  try{
+    if(unresolved(url)) throw new Error("Dump endpoint placeholder not replaced (__MMT_DASHBOARD_DUMP_URL__)");
+    S.dump = buildModel(await getJSON(url));
+  }catch(e){ S.dumpErr = e.message || String(e); S.dump = null; }
+  S.loading = false; paint();
+}
+async function loadSubjective(win){
+  const base = DEV.on ? DEV.subjective : ENDPOINTS.subjective;
+  if(unresolved(base)) throw new Error("Subjective endpoint placeholder not replaced (__MMT_SUBJECTIVE_URL__)");
+  let url = base;
+  if(!DEV.on){
+    const u = new URL(base, location.href);
+    u.searchParams.set("workspaceId", (S.dump.workspace.id)||"");
+    u.searchParams.set(DATE_PARAMS.start, iso(win.start));
+    u.searchParams.set(DATE_PARAMS.end,   iso(win.queryEnd));
+    url = u.toString();
+  }
+  return await getJSON(url);
+}
+
+/* ================================================================
+   RENDER — shell
+   ================================================================ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function paintSidebar(){
+  $("#nav").innerHTML = '<div class="nav-lbl">Reports</div>' + REPORT_TYPES.map(r => `
+    <button class="rpt" data-id="${r.id}" ${r.enabled?"":"disabled"}
+            aria-current="${S.active===r.id}">
+      <span class="ico">${r.icon}</span>
+      <span style="min-width:0">
+        <span class="nm">${esc(r.name)}</span>
+        <span class="ds">${esc(r.desc)}</span>
+      </span>
+      ${r.badge?`<span class="pill">${esc(r.badge)}</span>`:""}
+    </button>`).join("");
+  $("#nav").querySelectorAll(".rpt").forEach(b =>
+    b.addEventListener("click", () => { S.active = b.dataset.id; S.genErr=null; paint(); }));
+
+  if(S.dump){
+    $("#wsName").textContent = S.dump.workspace.name || "—";
+    $("#wsMeta").textContent = `${S.dump.vendors.length} vendors · ${S.dump.pos.length} POs · ${S.dump.miles.length} milestones`;
+    $("#topCrumb").textContent = S.dump.workspace.name || "";
+    const d = S.dump.asOf ? new Date(S.dump.asOf) : null;
+    $("#lastUpd").textContent = d ? `Data as of ${fmtShort(d)}, ${pad(d.getHours())}:${pad(d.getMinutes())}` : "—";
+  }else{
+    $("#wsName").textContent = S.loading ? "Loading…" : "Unavailable";
+    $("#wsMeta").innerHTML = "&nbsp;";
+  }
+  const dot=$("#dot"), txt=$("#dotText");
+  dot.className = "dot " + (S.loading?"busy":S.dumpErr?"bad":S.dump?"live":"");
+  txt.textContent = S.loading ? "Loading workspace data…" : S.dumpErr ? "Data unavailable" : "Workspace data loaded";
+}
+
+function paint(){
+  paintSidebar();
+  const st = $("#stage");
+  const active = REPORT_TYPES.find(r => r.id===S.active);
+  $("#topTitle").textContent = active ? active.name : "Reports";
+
+  if(S.loading){ st.innerHTML = screenLoading(); return; }
+  if(S.dumpErr){ st.innerHTML = screenError(S.dumpErr); $("#retry").onclick = loadDump; return; }
+  if(!active){ st.innerHTML = screenEmpty(); return; }
+  active.render();
+}
+
+const screenLoading = () => `
+  <div class="screen"><div class="sp-lg"></div>
+    <h2>Loading workspace data</h2>
+    <p>Fetching the latest milestone and purchase order data. This runs once when the page opens.</p>
+  </div>`;
+
+const screenError = msg => `
+  <div class="screen">
+    <h2>Workspace data didn't load</h2>
+    <p>Reports need this data before anything can be generated.</p>
+    <div class="why">${esc(msg)}</div><br>
+    <button class="btn" id="retry">Try again</button>
+  </div>`;
+
+const screenEmpty = () => `
+  <div class="empty">
+    <div class="mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
+    <h2>Choose a report type</h2>
+    <p>Pick a report from the left to see what it covers and generate it.</p>
+  </div>`;
+
+/* ================================================================
+   RENDER — weekly report panel
+   ================================================================ */
+function renderWeekly(){
+  const w = currentWeek(new Date());
+  const st = $("#stage");
+
+  // seven-day rail
+  const days = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(w.start.getFullYear(), w.start.getMonth(), w.start.getDate()+i);
+    const isToday = i === w.dayIndex, inWin = i <= w.dayIndex;
+    days.push(`<div class="day ${isToday?"today":inWin?"inwin":"future"}">
+      <div class="dow">${DOW[d.getDay()]}</div><div class="num">${d.getDate()}</div></div>`);
+  }
+
+  const covered = w.dayIndex + 1;
+  const m = S.dump;
+
+  st.innerHTML = `
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Weekly</div>
+      <h2>Weekly report</h2>
+      <p>Progress, critical updates, open issues and a risk sheet for the current week, across every vendor and purchase order in this workspace.</p>
+    </div>
+
+    <div class="panel-body">
+      <div class="win">
+        <div class="win-top">
+          <span class="k">Week of</span>
+          <span class="v">${fmtShort(w.start)} — ${fmt(w.end)}</span>
+          <span class="badge">${w.partial ? `Day ${covered} of 7` : "Full week"}</span>
+        </div>
+        <div class="rail">${days.join("")}</div>
+        <div class="rail-cap">Monday 00:00 to Sunday 23:59 · ${covered} day${covered===1?"":"s"} of data available</div>
+      </div>
+
+      <div class="note">
+        <strong>This report always covers the current week.</strong> There is no date range to choose —
+        the window is fixed to Monday 00:00 through Sunday 23:59 of the week you are in.
+        ${w.partial
+          ? `Generating today returns ${fmtShort(w.start)} to ${fmtShort(new Date())} only, because the week is still running.
+             Run it again on Sunday for the complete week.`
+          : `The week is complete, so this returns all seven days.`}
+      </div>
+
+      <div class="facts">
+        <div class="fact"><div class="k">Vendors</div><div class="v">${m.vendors.length}</div></div>
+        <div class="fact"><div class="k">Purchase orders</div><div class="v">${m.pos.length}</div></div>
+        <div class="fact"><div class="k">Projects</div><div class="v">${m.projects.length}</div></div>
+        <div class="fact"><div class="k">Open issues</div><div class="v">${m.totals.openIssues}</div></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="gen">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v13M7 12l5 5 5-5M4 21h16"/></svg>
+          Download weekly report (.xlsx)
+        </button>
+        <span class="hint">Fetches this week's updates, then saves a four-tab Excel workbook.</span>
+      </div>
+      <div id="genErr"></div>
+    </div>
+  </section>`;
+
+  $("#gen").addEventListener("click", () => generate(w));
+  if(S.genErr) showGenErr(S.genErr);
+}
+
+function showGenErr(msg){
+  $("#genErr").innerHTML = `<div class="fail"><strong>Report not generated.</strong> ${esc(msg)}</div>`;
+}
+
+/* ================================================================
+   GENERATE + DOWNLOAD
+   ================================================================ */
+async function generate(win){
+  const btn = $("#gen");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="sp"></span> Fetching this week's updates…`;
+  $("#genErr").innerHTML = "";
+  S.genErr = null;
+  try{
+    const subjRaw = await loadSubjective(win);
+    const activity = flattenSubjective(subjRaw);
+    btn.innerHTML = `<span class="sp"></span> Building workbook…`;
+    const wb = await buildWorkbook(S.dump, activity, win);
+    const buf = await wb.xlsx.writeBuffer();
+    const name = `${slug(S.dump.workspace.name||"workspace")}_Weekly_${iso(win.start)}_to_${iso(win.queryEnd)}.xlsx`;
+    download(buf, name);
+    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Downloaded`;
+    setTimeout(() => { btn.disabled=false; renderWeekly(); }, 2200);
+  }catch(e){
+    S.genErr = e.message || String(e);
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v13M7 12l5 5 5-5M4 21h16"/></svg> Download weekly report (.xlsx)`;
+    showGenErr(S.genErr);
+  }
+}
+const slug = s => String(s).replace(/[^\w]+/g,"_").replace(/^_|_$/g,"");
+function download(payload, filename){
+  const blob = new Blob([payload], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ================================================================
+   THE REPORT — Excel workbook, four tabs, exactly the finalised format
+   Executive Summary · Weekly Critical Updates · Risk & Recovery · Issues
+   ================================================================ */
+const XLSX_LIB = "https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js";
+let _libP = null;
+function loadExcelLib(){
+  if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if(_libP) return _libP;
+  _libP = new Promise((res,rej)=>{
+    const s = document.createElement("script");
+    s.src = XLSX_LIB;
+    s.onload = () => window.ExcelJS ? res(window.ExcelJS) : rej(new Error("ExcelJS loaded but unavailable"));
+    s.onerror = () => rej(new Error("Could not load the Excel library from the CDN"));
+    document.head.appendChild(s);
+  });
+  return _libP;
+}
+
+/* ---- palette + formats (mirrors build_weekly_report.py) */
+const XF = "Arial";
+const NAVY="1E2A3A", BANDF="FAFBFC", GREY="F1F5F9", VENDF="E8EDF3",
+      LINEC="D9DEE5", VBLUE="4DA3FF", CREAM="FEF9E7", ENTRY="FFFCF0";
+const DATE_FMT="DD-MMM-YY", PCT_FMT="0.0%", INT_FMT="#,##0;(#,##0);-";
+const A = h => "FF"+h;
+const thin = {style:"thin", color:{argb:A(LINEC)}};
+const BORDER = {left:thin,right:thin,top:thin,bottom:thin};
+const SCOL = {
+  delayed:["DC2626","FEE2E2"], at_high_risk:["EA580C","FFEDD5"],
+  at_medium_risk:["B45309","FEF3C7"], at_low_risk:["A16207","FEF9C3"],
+  on_track:["2563EB","DBEAFE"], in_progress:["2563EB","DBEAFE"],
+  complete:["16A34A","DCFCE7"], not_yet_started:["64748B","F1F5F9"]
+};
+const SLAB = {delayed:"Delayed", at_high_risk:"High Risk", at_medium_risk:"Medium Risk",
+  at_low_risk:"Low Risk", on_track:"On Track", in_progress:"In Progress",
+  complete:"Completed", not_yet_started:"Not Started"};
+const SPANS = [[1,2],[3,3],[4,5],[6,6],[7,7],[8,8],[9,10],[11,12],[13,13]];
+const ORDER = ["delayed","at_high_risk","at_medium_risk","at_low_risk","on_track","complete","not_yet_started"];
+
+/* Excel stores dates in UTC. Local midnight would shift a day backwards for
+   any timezone east of Greenwich, so rebase every date to UTC midnight. */
+const xd = d => d ? new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) : null;
+const fill = c => ({type:"pattern", pattern:"solid", fgColor:{argb:A(c)}});
+const col = n => { let s=""; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=(n-m-1)/26; } return s; };
+
+/* ---- sheet primitives */
+function masthead(ws, title, nc){
+  ws.mergeCells(1,1,1,nc);
+  const c = ws.getCell(1,1);
+  c.value = title;
+  c.font = {name:XF, size:13, bold:true, color:{argb:"FFFFFFFF"}};
+  c.fill = fill(NAVY);
+  c.alignment = {vertical:"middle", indent:1};
+  for(let j=1;j<=nc;j++) ws.getCell(1,j).fill = fill(NAVY);
+  ws.getRow(1).height = 26;
+}
+function hdrRow(ws, r, heads, widths, size){
+  heads.forEach((h,i)=>{
+    const c = ws.getCell(r,i+1);
+    c.value = h;
+    c.font = {name:XF, size:size||9, bold:true, color:{argb:"FFFFFFFF"}};
+    c.fill = fill(NAVY);
+    c.alignment = {vertical:"middle", horizontal:"center", wrapText:true};
+    c.border = BORDER;
+  });
+  ws.getRow(r).height = 28;
+  if(widths) widths.forEach((w,i)=> ws.getColumn(i+1).width = w);
+}
+function bar(ws, r, text, nc, bg, fg){
+  ws.mergeCells(r,1,r,nc);
+  const c = ws.getCell(r,1);
+  c.value = text;
+  c.font = {name:XF, size:10, bold:true, color:{argb:A(fg||"0F1728")}};
+  c.alignment = {vertical:"middle", indent:1};
+  for(let j=1;j<=nc;j++) ws.getCell(r,j).fill = fill(bg||GREY);
+  ws.getRow(r).height = 22;
+}
+function stCell(ws, r, c, status, size){
+  const [fg,bg] = SCOL[status] || SCOL.not_yet_started;
+  const cell = ws.getCell(r,c);
+  cell.value = SLAB[status] || "Not Started";
+  cell.font = {name:XF, size:size||9, bold:true, color:{argb:A(fg)}};
+  cell.fill = fill(bg);
+  cell.alignment = {vertical:"middle", horizontal:"center"};
+  cell.border = BORDER;
+}
+function mhdr(ws, r, heads, height){
+  SPANS.forEach(([c1,c2],i)=>{
+    if(c2>c1) ws.mergeCells(r,c1,r,c2);
+    const cell = ws.getCell(r,c1);
+    cell.value = heads[i];
+    cell.font = {name:XF, size:9, bold:true, color:{argb:"FFFFFFFF"}};
+    cell.alignment = {vertical:"middle", horizontal:"center", wrapText:true};
+    for(let cc=c1;cc<=c2;cc++){ ws.getCell(r,cc).fill = fill(NAVY); ws.getCell(r,cc).border = BORDER; }
+  });
+  ws.getRow(r).height = height||26;
+}
+function mrow(ws, r, values, o){
+  o = o || {};
+  SPANS.forEach(([c1,c2],i)=>{
+    const idx = i+1;
+    if(c2>c1) ws.mergeCells(r,c1,r,c2);
+    const cell = ws.getCell(r,c1);
+    if(values[i] !== null && values[i] !== undefined) cell.value = values[i];
+    cell.font = {name:XF, size:o.size||9, bold:(o.bold||[]).includes(idx)};
+    const nf = o.fmts && o.fmts[idx];
+    const centre = (o.centre||[]).includes(idx) || !!nf;
+    if(nf) cell.numFmt = nf;
+    cell.alignment = {vertical:"middle", horizontal:centre?"center":"left",
+                      wrapText:(o.wrap||[]).includes(idx), indent:centre?0:1};
+    for(let cc=c1;cc<=c2;cc++){
+      const t = ws.getCell(r,cc);
+      t.border = BORDER;
+      if(o.fill) t.fill = fill(o.fill);
+    }
+  });
+  if(o.height) ws.getRow(r).height = o.height;
+}
+function vmerge(ws, r1, r2, c1, c2, value, fmt, size, colour){
+  ws.mergeCells(r1,c1,r2,c2);
+  const cell = ws.getCell(r1,c1);
+  if(value !== null && value !== undefined) cell.value = value;
+  cell.font = {name:XF, size:size||14, bold:true, color:{argb:A(colour||"0F1728")}};
+  cell.alignment = {vertical:"middle", horizontal:"center"};
+  if(fmt) cell.numFmt = fmt;
+  for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) ws.getCell(r,c).border = BORDER;
+}
+function completedBand(ws, r, nc, text, outline, hidden){
+  ws.mergeCells(r,1,r,nc);
+  const c = ws.getCell(r,1);
+  c.value = "\u2713   " + text + "   \u2014   COMPLETED";
+  c.font = {name:XF, size:9, bold:true, color:{argb:A("166534")}};
+  c.alignment = {vertical:"middle", horizontal:"left", indent:2};
+  for(let cc=1;cc<=nc;cc++){ ws.getCell(r,cc).fill = fill("DCFCE7"); ws.getCell(r,cc).border = BORDER; }
+  const row = ws.getRow(r);
+  row.height = 20;
+  if(outline != null) row.outlineLevel = outline;
+  if(hidden) row.hidden = true;
+}
+function footnote(ws, r, nc, text, rows){
+  ws.mergeCells(r,1,r+(rows||0),nc);
+  const c = ws.getCell(r,1);
+  c.value = text;
+  c.font = {name:XF, size:8, italic:true, color:{argb:A("64748B")}};
+  c.alignment = {wrapText:true, vertical:"top", indent:1};
+}
+const bySev = (a,b) => (SEV[b.status]-SEV[a.status]) || (b.slip-a.slip);
+
+/* ================================================================
+   WORKBOOK
+   ================================================================ */
+async function buildWorkbook(m, activity, win){
+  const ExcelJS = await loadExcelLib();
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Venwiz"; wb.created = new Date();
+  const today = new Date();
+  sheetExec(wb, m, today, win);
+  sheetUpdates(wb, m, activity, win);
+  sheetRisk(wb, m);
+  sheetIssues(wb, m, activity, today);
+  wb.eachSheet(ws => {
+    ws.pageSetup = Object.assign({}, ws.pageSetup, {orientation:"landscape", fitToWidth:1, fitToPage:true});
+    ws.views = ws.views && ws.views.length ? ws.views : [{showGridLines:false}];
+    if(!ws.properties.tabColor) ws.properties.tabColor = {argb:A(NAVY)};
+  });
+  return wb;
+}
+
+/* ---------------------------------------------------- TAB 1 */
+function sheetExec(wb, m, today, win){
+  const NC = 13;
+  const ws = wb.addWorksheet("Executive Summary", {
+    properties:{tabColor:{argb:A(NAVY)}, outlineProperties:{summaryBelow:false, summaryRight:false}},
+    views:[{state:"frozen", xSplit:0, ySplit:7, showGridLines:false}]
+  });
+  masthead(ws, `${String(m.workspace.name||"").toUpperCase()}  |  WEEKLY EXPEDITING REPORT  \u2014  ${fmt(today)}`, NC);
+  [26,18,14,13,13,13,12,12,12,12,12,12,11].forEach((w,i)=> ws.getColumn(i+1).width = w);
+
+  const pos = m.pos, iss = m.issues;
+  const t = m.totals;
+  const openi = iss.filter(i=>i.status!=="closed");
+  const closedi = iss.filter(i=>i.status==="closed");
+
+  // --- header band
+  const r0 = 2;
+  [[1,2,"DELIVERY STATUS"],[3,9,"PO STATUS"],[10,13,"ACTIONABLES"]].forEach(([c1,c2,txt])=>{
+    ws.mergeCells(r0,c1,r0,c2);
+    const cell = ws.getCell(r0,c1);
+    cell.value = txt;
+    cell.font = {name:XF, size:9, bold:true, color:{argb:"FFFFFFFF"}};
+    cell.alignment = {vertical:"middle", horizontal:"center"};
+    for(let cc=c1;cc<=c2;cc++){ ws.getCell(r0,cc).fill = fill(NAVY); ws.getCell(r0,cc).border = BORDER; }
+  });
+  ws.getRow(r0).height = 20;
+
+  const delivery = [
+    ["Total quantity ordered", t.qTot, INT_FMT, NAVY],
+    ["Expected by today", t.qExp, INT_FMT, NAVY],
+    ["Delivered till date", t.qDel, INT_FMT, t.qDel>=t.qExp ? "16A34A" : "DC2626"],
+    ["Qty Completion", t.qTot ? t.qDel/t.qTot : 0, PCT_FMT,
+      (t.qTot && t.qDel/t.qTot>=0.8) ? "16A34A" : "DC2626"]
+  ];
+  delivery.forEach(([txt,v,fmtS,colour],k)=>{
+    const rr = r0+1+k;
+    const a1 = ws.getCell(rr,1);
+    a1.value = txt;
+    a1.font = {name:XF, size:9, bold:true, color:{argb:A("475569")}};
+    a1.fill = fill(GREY);
+    a1.alignment = {vertical:"middle", horizontal:"left", indent:1};
+    a1.border = BORDER;
+    const b1 = ws.getCell(rr,2);
+    b1.value = v;
+    b1.font = {name:XF, size:12, bold:true, color:{argb:A(colour)}};
+    b1.numFmt = fmtS;
+    b1.alignment = {vertical:"middle", horizontal:"center"};
+    b1.border = BORDER;
+    ws.getRow(rr).height = 22;
+  });
+
+  const labRow = r0+1, cnt1 = r0+2, cnt2 = r0+3, pctRow = r0+4;
+  ORDER.forEach((st,k)=>{
+    const c = 3+k, [fg,bg] = SCOL[st];
+    const lc = ws.getCell(labRow,c);
+    lc.value = SLAB[st];
+    lc.font = {name:XF, size:8, bold:true, color:{argb:A(fg)}};
+    lc.fill = fill(bg);
+    lc.alignment = {vertical:"middle", horizontal:"center", wrapText:true};
+    lc.border = BORDER;
+    vmerge(ws, cnt1, cnt2, c, c, 0, INT_FMT, 14, fg);
+    const pc = ws.getCell(pctRow,c);
+    pc.value = 0; pc.numFmt = PCT_FMT;
+    pc.font = {name:XF, size:9, color:{argb:A("475569")}};
+    pc.alignment = {vertical:"middle", horizontal:"center"};
+    pc.border = BORDER;
+  });
+
+  [["Total issues", iss.length, INT_FMT, NAVY],
+   ["Open", openi.length, INT_FMT, openi.length?"DC2626":"16A34A"],
+   ["Closed", closedi.length, INT_FMT, "16A34A"],
+   ["% closed", null, PCT_FMT, NAVY]].forEach(([txt,v,fmtS,colour],k)=>{
+    const cc = 10+k;
+    const lc = ws.getCell(labRow,cc);
+    lc.value = txt;
+    lc.font = {name:XF, size:8, bold:true, color:{argb:A("475569")}};
+    lc.fill = fill(GREY);
+    lc.alignment = {vertical:"middle", horizontal:"center", wrapText:true};
+    lc.border = BORDER;
+    vmerge(ws, cnt1, pctRow, cc, cc, v, fmtS, 14, colour);
+  });
+  ws.getCell(cnt1,13).value = {formula:`IFERROR(L${cnt1}/J${cnt1},0)`};
+  [labRow,cnt1,cnt2,pctRow].forEach(rr => ws.getRow(rr).height = 22);
+
+  let r = pctRow+2;
+
+  // --- vendor details
+  bar(ws, r, "VENDOR DETAILS   \u00B7   click + in the left margin to open a vendor's POs", NC);
+  r++;
+  mhdr(ws, r, ["Vendor  /  PO","PO number","Project","Status","Actual %","Expected %","Planned ETD","Forecast ETD","Slip (days)"]);
+  r++;
+  const venFirst = r;
+  const fmts = {5:PCT_FMT, 6:PCT_FMT, 7:DATE_FMT, 8:DATE_FMT, 9:INT_FMT};
+
+  const writeChildren = (list, thirdCol) => {
+    list.slice().sort(bySev).forEach(p=>{
+      if(p.status==="complete"){ completedBand(ws, r, NC, `PO ${p.po}  \u2014  ${p.desc}`, 1, true); r++; return; }
+      mrow(ws, r, ["      "+p.desc, p.po, thirdCol(p), null, p.act/100, p.exp/100, xd(p.pEnd), xd(p.fEnd), p.slip],
+           {fmts, size:8, height:20, centre:[2]});
+      stCell(ws, r, 6, p.status, 8);
+      if(p.slip) ws.getCell(r,13).font = {name:XF, size:8, bold:true, color:{argb:A("DC2626")}};
+      const row = ws.getRow(r); row.outlineLevel = 1; row.hidden = true;
+      r++;
+    });
+  };
+
+  m.vendors.slice().sort(bySev).forEach(v=>{
+    const vpos = m.pos.filter(p=>p.vendorId===v.id);
+    if(vpos.length && vpos.every(p=>p.status==="complete")){
+      completedBand(ws, r, NC, `${v.vendor}   \u00B7   ${vpos.length} PO${vpos.length>1?"s":""}`);
+      r++; return;
+    }
+    mrow(ws, r, [v.vendor, `${vpos.length} PO${vpos.length>1?"s":""}`, "", null,
+                 v.act/100, v.exp/100, xd(v.pEnd), xd(v.fEnd), v.slip],
+         {fmts, fill:VENDF, bold:[1], height:24, centre:[2]});
+    stCell(ws, r, 6, v.status);
+    if(v.slip) ws.getCell(r,13).font = {name:XF, size:9, bold:true, color:{argb:A("DC2626")}};
+    r++;
+    writeChildren(vpos, p=>p.project);
+  });
+  const venLast = r-1;
+  r++;
+
+  // --- project details
+  bar(ws, r, "PROJECT DETAILS   \u00B7   click + to open a project's POs", NC);
+  r++;
+  mhdr(ws, r, ["Project  /  PO","PO number","Vendor","Status","Actual %","Expected %","Planned ETD","Forecast ETD","Slip (days)"]);
+  r++;
+  m.projects.slice().sort((a,b)=> (a.project==="Unmapped")-(b.project==="Unmapped") || bySev(a,b)).forEach(pr=>{
+    const ppos = m.pos.filter(p=>p.project===pr.project);
+    if(ppos.length && ppos.every(p=>p.status==="complete")){
+      completedBand(ws, r, NC, `${pr.project}   \u00B7   ${pr.poCount} PO${pr.poCount>1?"s":""}`);
+      r++; return;
+    }
+    mrow(ws, r, [pr.project, `${pr.poCount} PO${pr.poCount>1?"s":""}`,
+                 pr.vendors.length===1 ? pr.vendors[0] : `${pr.vendors.length} vendors`, null,
+                 pr.act/100, pr.exp/100, xd(pr.pEnd), xd(pr.fEnd), pr.slip],
+         {fmts, fill:VENDF, bold:[1], height:24, centre:[2]});
+    stCell(ws, r, 6, pr.status);
+    if(pr.slip) ws.getCell(r,13).font = {name:XF, size:9, bold:true, color:{argb:A("DC2626")}};
+    r++;
+    writeChildren(ppos, p=>p.vendor);
+  });
+  r++;
+
+  // --- header formulas over the vendor block
+  const rngS = `$F$${venFirst}:$F$${venLast}`, rngP = `$D$${venFirst}:$D$${venLast}`;
+  const compCol = 3 + ORDER.indexOf("complete");
+  ORDER.forEach((st,k)=>{
+    const c = 3+k, L = col(c);
+    if(c===compCol){
+      // Completed POs render as tick bands with no status cell for COUNTIFS to find,
+      // so the widget carries the real count directly.
+      ws.getCell(cnt1,c).value = m.pos.filter(p=>p.status==="complete").length;
+    }else{
+      ws.getCell(cnt1,c).value = {formula:`COUNTIFS(${rngS},${L}$${labRow},${rngP},"<>")`};
+    }
+    ws.getCell(pctRow,c).value = {formula:`IFERROR(${L}${cnt1}/${m.pos.length},0)`};
+  });
+  const issLast = Math.max(3 + openi.length, 4);
+  ws.getCell(cnt1,11).value = {formula:`COUNTA('Issues & Actionables'!$A$4:$A$${issLast})`};
+
+  footnote(ws, r, NC,
+    "Vendor rows come straight from MMT. Project is a dynamic-data key on the PO, so project rows are computed: "+
+    "actual and expected are duration-weighted averages of the project's POs, ETDs are the latest across those POs, "+
+    "and status is the worst PO status with Delayed taking priority. Weighting uses plannedDurationDays, "+
+    "which MMT returns as null on some POs \u2014 those carry a weight of 1.", 1);
+  return ws;
+}
+
+/* ---------------------------------------------------- TAB 2 */
+function sheetUpdates(wb, m, activity, win){
+  const NC = 7;
+  const ws = wb.addWorksheet("Weekly Critical Updates", {views:[{state:"frozen", xSplit:0, ySplit:2, showGridLines:false}]});
+  masthead(ws, `CRITICAL UPDATES   \u2014   ${fmtShort(win.start)} to ${fmt(win.queryEnd)}`, NC);
+
+  ["Vendor","PO","Project","Raised at","Critical update","Logged by","Logged on"].forEach((h,i)=>{
+    const c = ws.getCell(2,i+1);
+    c.value = h;
+    c.font = {name:XF, size:9, bold:true, color:{argb:"FFFFFFFF"}};
+    c.fill = fill(NAVY);
+    c.alignment = {vertical:"middle", horizontal:"center", wrapText:true};
+    c.border = {left:thin, right:thin, top:thin, bottom:{style:"medium", color:{argb:A(VBLUE)}}};
+  });
+  [26,13,26,34,74,15,13].forEach((w,i)=> ws.getColumn(i+1).width = w);
+  ws.getRow(2).height = 30;
+
+  const cu = activity.filter(a => a.kind==="critical_update" && (!a.date || (a.date>=win.start && a.date<=win.queryEnd)));
+  let r = 3;
+  if(!cu.length){
+    const c = ws.getCell(r,1);
+    c.value = "No critical updates were logged in this window.";
+    c.font = {name:XF, size:9, italic:true, color:{argb:A("64748B")}};
+    return ws;
+  }
+
+  const projOf = {}; m.pos.forEach(p => projOf[p.po] = p.project);
+  const raisedAt = a =>
+    a.level==="milestone" ? `${a.item} > ${a.milestone}` :
+    a.level==="item"      ? `Item: ${a.item}` :
+    a.level==="po"        ? "PO level" :
+    a.level==="vendor"    ? "Vendor level" : "Project level";
+
+  const groups = new Map();
+  cu.forEach(a=>{
+    const k = `${a.vendor}\u0000${a.po||""}`;
+    if(!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(a);
+  });
+  const keys = [...groups.keys()].sort();
+
+  keys.forEach((k,gi)=>{
+    const rows = groups.get(k);
+    const [vn,po] = k.split("\u0000");
+    if(gi){ ws.getRow(r).height = 14; r++; }
+    const head = [vn, po||"\u2014", po?(projOf[po]||"\u2014"):"\u2014",
+                  `${rows.length} critical update${rows.length>1?"s":""}`, "", "", ""];
+    head.forEach((v,i)=>{
+      const j = i+1, c = ws.getCell(r,j);
+      c.value = v;
+      c.font = {name:XF, size:9, bold:[1,2,4].includes(j), color:{argb:A(j<=4?"6B4A00":"8A7350")}};
+      c.fill = fill(CREAM);
+      c.alignment = {vertical:"middle", horizontal:[2,4].includes(j)?"center":"left",
+                     wrapText:[1,3].includes(j), indent:[2,4].includes(j)?0:1};
+      c.border = {left:thin, right:thin, bottom:thin, top:{style:"medium", color:{argb:A(VBLUE)}}};
+    });
+    ws.getRow(r).height = 26;
+    r++;
+    rows.sort((a,b)=>(b.date||0)-(a.date||0)).forEach(a=>{
+      ["", "", "", raisedAt(a), a.text, a.author||"\u2014", xd(a.date)].forEach((v,i)=>{
+        const j = i+1, c = ws.getCell(r,j);
+        if(v !== null && v !== undefined) c.value = v;
+        c.border = BORDER;
+        if(j===4){
+          c.font = {name:XF, size:8, bold:true, color:{argb:A("334155")}};
+          c.fill = fill("FDFBF3");
+          c.alignment = {vertical:"middle", wrapText:true, indent:1};
+        }else if(j===5){
+          c.font = {name:XF, size:9};
+          c.alignment = {vertical:"middle", wrapText:true, indent:1};
+        }else{
+          c.font = {name:XF, size:9};
+          c.alignment = {vertical:"middle", horizontal:"center"};
+          if(j===7) c.numFmt = DATE_FMT;
+        }
+      });
+      ws.getRow(r).height = 52;
+      r++;
+    });
+  });
+
+  r++;
+  footnote(ws, r, NC,
+    "Critical updates logged inside the report window, straight from MMT. 'Raised at' names the level the update was "+
+    "logged against. Vendor and project-level updates carry no PO or item, because they sit above the level where "+
+    "those resolve.", 2);
+  return ws;
+}
+
+/* ---------------------------------------------------- TAB 3 */
+function sheetRisk(wb, m){
+  const NC = 4;
+  const ws = wb.addWorksheet("Risk & Recovery", {views:[{state:"frozen", xSplit:0, ySplit:2, showGridLines:false}]});
+  masthead(ws, "RISK & RECOVERY   \u2014   COMPLETED MANUALLY", NC);
+  hdrRow(ws, 2, ["Vendor","PO  /  Scope","Risk","Recovery plan"], [28,30,56,66]);
+  ws.getRow(2).height = 30;
+  for(let j=1;j<=NC;j++)
+    ws.getCell(2,j).border = {left:thin, right:thin, top:thin, bottom:{style:"medium", color:{argb:A(VBLUE)}}};
+
+  const edge = {style:"thin", color:{argb:A("E4D9B8")}};
+  const ENTRY_B = {left:edge, right:edge, top:edge, bottom:edge};
+  const med = {style:"medium", color:{argb:A("94A3B8")}};
+
+  const groups = new Map();
+  m.pos.filter(p=>p.status!=="complete").forEach(p=>{
+    if(!groups.has(p.vendor)) groups.set(p.vendor, []);
+    groups.get(p.vendor).push(p);
+  });
+  const order = [...groups.entries()].sort((a,b)=>
+    (Math.max(...b[1].map(p=>SEV[p.status])) - Math.max(...a[1].map(p=>SEV[p.status]))) ||
+    (Math.max(...b[1].map(p=>p.slip)) - Math.max(...a[1].map(p=>p.slip))));
+
+  let r = 3;
+  order.forEach(([vendor, plist])=>{
+    plist.sort(bySev);
+    const first = r;
+    plist.forEach(p=>{
+      const pc = ws.getCell(r,2);
+      pc.value = `${p.po}\n${p.desc}`;
+      pc.font = {name:XF, size:9, bold:true, color:{argb:A("1E2A3A")}};
+      pc.alignment = {vertical:"middle", horizontal:"left", wrapText:true, indent:1};
+      pc.border = BORDER;
+      [1,3,4].forEach(j=>{
+        const c = ws.getCell(r,j);
+        c.value = "";
+        c.font = {name:XF, size:9};
+        c.alignment = {vertical:"middle", wrapText:[3,4].includes(j), indent:1};
+        if([3,4].includes(j)){ c.fill = fill(ENTRY); c.border = ENTRY_B; }
+        else c.border = BORDER;
+      });
+      ws.getRow(r).height = 40;
+      r++;
+    });
+    const last = r-1;
+    if(last>first) ws.mergeCells(first,1,last,1);
+    const vc = ws.getCell(first,1);
+    vc.value = vendor;
+    vc.font = {name:XF, size:10, bold:true, color:{argb:A("1E2A3A")}};
+    vc.alignment = {vertical:"middle", horizontal:"left", wrapText:true, indent:1};
+    for(let rr=first;rr<=last;rr++) ws.getCell(rr,1).fill = fill(VENDF);
+    for(let cc=1;cc<=NC;cc++){
+      const c = ws.getCell(first,cc);
+      c.border = Object.assign({}, c.border, {top:med});
+    }
+  });
+  for(let cc=1;cc<=NC;cc++){
+    const c = ws.getCell(r-1,cc);
+    c.border = Object.assign({}, c.border, {bottom:med});
+  }
+
+  r++;
+  ws.mergeCells(r,1,r,NC);
+  const fn = ws.getCell(r,1);
+  fn.value = "Every PO that is not yet complete, grouped under its vendor. Cream cells are for typing into. "+
+             "A vendor drops off this sheet once all its POs close.";
+  fn.font = {name:XF, size:8, italic:true, color:{argb:A("64748B")}};
+  fn.alignment = {vertical:"middle", wrapText:true, indent:1};
+  ws.getRow(r).height = 24;
+  ws.pageSetup = {printTitlesRow:"1:2"};
+  return ws;
+}
+
+/* ---------------------------------------------------- TAB 4 */
+function sheetIssues(wb, m, activity, today){
+  const NC = 12;
+  const ws = wb.addWorksheet("Issues & Actionables", {views:[{state:"frozen", xSplit:0, ySplit:3, showGridLines:false}]});
+  masthead(ws, "ISSUES & ACTIONABLES   \u2014   OPEN ISSUES", NC);
+
+  // notes for an issue may arrive on the subjective feed rather than the dump
+  const extraNotes = {};
+  activity.filter(a=>a.kind==="issue").forEach(a=>{
+    const ns = (a.raw.notes||[]).map(n => typeof n==="string" ? n : String(n.text||"")).filter(Boolean);
+    if(ns.length) extraNotes[a.id] = ns;
+  });
+
+  const openi = m.issues.filter(i=>i.status!=="closed").map(i=>{
+    const age = i.raised ? Math.max(0, dayDiff(today, i.raised)) : null;
+    const notes = (extraNotes[i.id] && extraNotes[i.id].length) ? extraNotes[i.id] : i.notes;
+    return Object.assign({}, i, {age, notes});
+  }).sort((a,b)=>(b.age||0)-(a.age||0));
+
+  bar(ws, 2, `${openi.length} open issue${openi.length!==1?"s":""}`, NC, "FEF3C7", "92400E");
+  hdrRow(ws, 3, ["Vendor","PO  /  Project","Item","Milestone","Category","Contributor","Issue",
+                 "Raised by","Assigned to","Raised on","Age (days)","Notes"],
+         [24,26,24,26,19,13,50,14,15,12,10,34]);
+
+  let r = 4;
+  if(!openi.length){
+    const c = ws.getCell(r,1);
+    c.value = "No open issues recorded in MMT.";
+    c.font = {name:XF, size:9, italic:true, color:{argb:A("64748B")}};
+    return ws;
+  }
+  openi.forEach((i,k)=>{
+    const vals = [i.vendor, i.po + (i.project ? "\n"+i.project : ""),
+                  i.item||"-", i.milestone||"-", i.category||"-", i.contributor||"-", i.text,
+                  i.raisedBy||"-", i.assigned||"-", xd(i.raised), i.age,
+                  i.notes.length ? i.notes.join("  |  ") : "-"];
+    vals.forEach((v,idx)=>{
+      const j = idx+1, c = ws.getCell(r,j);
+      if(v !== null && v !== undefined) c.value = v;
+      c.font = {name:XF, size:9, bold:(j===1)};
+      c.border = BORDER;
+      const centre = [5,6,10,11].includes(j);
+      c.alignment = {vertical:"middle", horizontal:centre?"center":"left",
+                     wrapText:[2,3,4,7,12].includes(j), indent:centre?0:1};
+      if(j===10) c.numFmt = DATE_FMT;
+      if(j===11) c.numFmt = INT_FMT;
+      if(k%2===1) c.fill = fill(BANDF);
+    });
+    if((i.age||0) > 14)
+      ws.getCell(r,11).font = {name:XF, size:9, bold:true, color:{argb:A("DC2626")}};
+    r++;   // no explicit height, so Excel auto-fits the row to its wrapped content
+  });
+  return ws;
+}
+
+/* ================================================================ BOOT */
+paint();
+loadDump();
+</script>
+</body>
+</html>
