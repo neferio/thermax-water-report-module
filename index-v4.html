@@ -1439,7 +1439,7 @@ function flattenVersions(raw){
         const from = s.earliest ? s.earliest.value : null;
         const to   = s.latest   ? s.latest.value   : null;
         if(to == null || from === to) continue;        // only real movement
-        rows.push({ code:String(it.itemCode||""), item:String(it.itemName||""), from, to });
+        rows.push({ item:String(it.itemName||it.itemCode||""), from, to });
       }
       if(rows.length) out[key] = rows;
     }
@@ -1460,7 +1460,7 @@ const VVR = {
   SOFT:"F2F5FA",
   W:10200,            // full table width, dxa
   GRID:{ head:[1900,3200,2100,3000], part:[4600,5600], det:[700,1400,4900,1600,1600],
-         card:[1300,2700,900,1200,1400,1500,1200], move:[2100,3500,2100,2100], photo:[5100,5100] }
+         card:[1300,2700,900,1200,1400,1500,1200], move:[5600,2100,2100], photo:[5100,5100] }
 };
 const VVR_STATUS = { delayed:"C00000", at_high_risk:"B54708", at_medium_risk:"B54708",
   at_low_risk:"44546A", on_track:"2E75B6", in_progress:"2E75B6",
@@ -1643,17 +1643,11 @@ async function buildVisitReport(m, vendor, activity, moves, win){
       const sh = (t,w) => cell(new Paragraph({children:[T(t,{bold:true,size:18,color:F.LABEL})],
             alignment:CTR, spacing:{before:0,after:0,line:264}}),
           {shading:{type:ShadingType.CLEAR,fill:F.SOFT}, width:{size:w,type:WidthType.DXA}});
-      const mrows = [ cardHead([sh("Item Code",MG[0]),sh("Item",MG[1]),sh("From",MG[2]),sh("To",MG[3])]) ];
-      mv.forEach(x=>{
-        // the version API returns itemCode only, so resolve the name from the dump
-        const hit = m.items.find(i => i.po===p.po && i.code===x.code);
-        const name = x.item || (hit && hit.name) || "";
-        mrows.push(new TableRow({children:[
-          td(x.code||"\u2014",MG[0],{align:CTR,run:{bold:true}}),
-          td(name||"\u2014",MG[1]),
-          td(x.from==null?"\u2014":`${Math.round(x.from)}%`,MG[2],{align:CTR}),
-          td(x.to==null?"\u2014":`${Math.round(x.to)}%`,MG[3],{align:CTR,run:{bold:true}})]}));
-      });
+      const mrows = [ cardHead([sh("Item",MG[0]),sh("From",MG[1]),sh("To",MG[2])]) ];
+      mv.forEach(x=> mrows.push(new TableRow({children:[
+        td(x.item,MG[0]),
+        td(x.from==null?"\u2014":`${Math.round(x.from)}%`,MG[1],{align:CTR}),
+        td(x.to==null?"\u2014":`${Math.round(x.to)}%`,MG[2],{align:CTR,run:{bold:true}})]})));
       body.push(table(mrows,MG));
     }
     rows.push(new TableRow({children:[ cell(body,
